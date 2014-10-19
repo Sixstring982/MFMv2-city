@@ -10,5 +10,10 @@
 #include "Element_Dreg.h"
 #include "Element_Res.h"
 #include "Element_Creg.h"
+#include "Element_City_Street.h"
+#include "Element_City_Sidewalk.h"
+#include "Element_City_Intersection.h"
+#include "Element_City_Park.h"
+#include "Element_City_Building.h"
 
 #endif /* MAIN_H */

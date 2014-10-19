@@ -86,7 +86,7 @@ namespace MFM
       Element<CC>(MFM_UUID_FOR("CityIntersection", CITY_VERSION)),
       m_streetCreateOdds(this, "streetCreateOdds",
                          "Street Odds",
-                         "Odds of creating a street", 1, 2, 10)
+                         "Odds of creating a street", 1, 1, 10)
     {
       Element<CC>::SetAtomicSymbol("In");
       Element<CC>::SetName("City Intersection");

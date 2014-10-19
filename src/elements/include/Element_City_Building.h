@@ -180,6 +180,15 @@ namespace MFM
       case 0x4: return 0xffffff00;
       case 0x5: return 0xff00ffff;
       case 0x6: return 0xffff00ff;
+      case 0x7: return 0xffff0000;
+      case 0x8: return 0xff00ff00;
+      case 0x9: return 0xff0000ff;
+      case 0xa: return 0xff7f007f;
+      case 0xb: return 0xff7f7f00;
+      case 0xc: return 0xff007f7f;
+      case 0xd: return 0xff7f007f;
+      case 0xe: return 0xff7f0000;
+      case 0xf: return 0xff007f00;
       default:  return 0xff800000;
       }
     }
@@ -231,18 +240,17 @@ namespace MFM
     }
 
 
-  u32 GetSidewalkType() const;
+    u32 GetSidewalkType() const;
 
-  bool DoNBSidewalkCase(EventWindow<CC>& window) const;
+    bool DoNBSidewalkCase(EventWindow<CC>& window) const;
 
-  bool DoNBPerpGrowthCase(EventWindow<CC>& window) const;
+    bool DoNBPerpGrowthCase(EventWindow<CC>& window) const;
 
-  bool DoNBCornerGrowthCase(EventWindow<CC>& window) const;
+    bool DoNBCornerGrowthCase(EventWindow<CC>& window) const;
 
-  void SpawnNextBuilding(EventWindow<CC>& window) const;
+    void SpawnNextBuilding(EventWindow<CC>& window) const;
 
-#if 0
-    void SpawnNextBuilding(EventWindow<CC>& window) const
+    void SpawnNextBuildingSnakey(EventWindow<CC>& window) const
     {
       if(GetAreaIndex(window.GetCenterAtom()) < GetMaxArea(window.GetCenterAtom()))
       {
@@ -291,7 +299,6 @@ namespace MFM
         }
       }
     }
-#endif
 
    public:
     virtual void Behavior(EventWindow<CC>& window) const
@@ -306,7 +313,6 @@ namespace MFM
       {
         if(window.GetRandom().OneIn(m_carSpawnOdds.GetValue()))
         {
-          /* Spawn a car :0 */
         }
 
         SpawnNextBuilding(window);
