@@ -54,7 +54,7 @@ namespace MFM
       INITIALIZED_POS = BITS - INITIALIZED_LEN - 1
     };
 
-    typedef BitField<BitVector<BITS>, INITIALIZED_LEN, INITIALIZED_POS> AFInitBits;
+    typedef BitField<BitVector<BITS>, VD::U32, INITIALIZED_LEN, INITIALIZED_POS> AFInitBits;
 
    private:
     ElementParameterS32<CC> m_streetCreateOdds;
@@ -86,7 +86,7 @@ namespace MFM
       Element<CC>(MFM_UUID_FOR("CityIntersection", CITY_VERSION)),
       m_streetCreateOdds(this, "streetCreateOdds",
                          "Street Odds",
-                         "Odds of creating a street", 1, 2, 10, 1)
+                         "Odds of creating a street", 1, 2, 10)
     {
       Element<CC>::SetAtomicSymbol("In");
       Element<CC>::SetName("City Intersection");

@@ -66,10 +66,10 @@ namespace MFM
       MIN_AREA = 3
     };
 
-    typedef BitField<BitVector<BITS>, SUB_TYPE_LEN, SUB_TYPE_POS> AFSubType;
-    typedef BitField<BitVector<BITS>, INITTED_LEN, INITTED_POS> AFInitted;
-    typedef BitField<BitVector<BITS>, MAX_AREA_LEN, MAX_AREA_POS> AFMaxArea;
-    typedef BitField<BitVector<BITS>, AREA_INDEX_LEN, AREA_INDEX_POS> AFAreaIndex;
+    typedef BitField<BitVector<BITS>, VD::U32, SUB_TYPE_LEN, SUB_TYPE_POS> AFSubType;
+    typedef BitField<BitVector<BITS>, VD::U32, INITTED_LEN, INITTED_POS> AFInitted;
+    typedef BitField<BitVector<BITS>, VD::U32, MAX_AREA_LEN, MAX_AREA_POS> AFMaxArea;
+    typedef BitField<BitVector<BITS>, VD::U32, AREA_INDEX_LEN, AREA_INDEX_POS> AFAreaIndex;
 
     ElementParameterS32<CC> m_carSpawnOdds;
 
@@ -141,7 +141,7 @@ namespace MFM
     Element_City_Building() :
       Element<CC>(MFM_UUID_FOR("CityBuilding", BUILDING_VERSION)),
       m_carSpawnOdds(this, "carSpawnOdds", "Car Spawn Odds",
-                     "Odds of a building spawning a car.", 1, 1000, 10000, 10)
+                     "Odds of a building spawning a car.", 1, 1000, 10000)
     {
       Element<CC>::SetAtomicSymbol("Bd");
       Element<CC>::SetName("City Building");
@@ -317,5 +317,7 @@ namespace MFM
   template <class CC>
   Element_City_Building<CC> Element_City_Building<CC>::THE_INSTANCE;
 }
+
+#include "Element_City_Building.tcc"
 
 #endif /* ELEMENT_CITY_BUILDING_H */

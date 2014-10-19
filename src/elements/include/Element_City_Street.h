@@ -54,7 +54,7 @@ namespace MFM
       STREET_DIR_POS = BITS - STREET_DIR_LEN - 1
     };
 
-    typedef BitField<BitVector<BITS>, STREET_DIR_LEN, STREET_DIR_POS> AFStreetDirection;
+    typedef BitField<BitVector<BITS>, VD::U32, STREET_DIR_LEN, STREET_DIR_POS> AFStreetDirection;
 
    private:
     ElementParameterS32<CC> m_intersectionOdds;
@@ -85,7 +85,7 @@ namespace MFM
       Element<CC>(MFM_UUID_FOR("CityStreet", STREET_VERSION)),
       m_intersectionOdds(this, "intersectionOdds",
                            "Intersection Odds",
-                           "Odds of creating an intersection", 1, 20, 100, 10)
+                           "Odds of creating an intersection", 1, 20, 100)
     {
       Element<CC>::SetAtomicSymbol("St");
       Element<CC>::SetName("City Street");

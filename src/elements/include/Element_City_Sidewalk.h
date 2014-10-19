@@ -64,9 +64,12 @@ namespace MFM
       BUILDING_DIST_LEN = CityConstants::CITY_BUILDING_COUNT * 2
     };
 
-    typedef BitField<BitVector<BITS>, BUILDING_FLAG_LEN, BUILDING_FLAG_POS> AFBuildingFlag;
-    typedef BitField<BitVector<BITS>, BUILDING_TIMER_LEN, BUILDING_TIMER_POS> AFBuildingTimer;
-    typedef BitField<BitVector<BITS>, BUILDING_DIST_LEN, BUILDING_DIST_POS> AFBuildingDist;
+    typedef
+    BitField<BitVector<BITS>, VD::U32, BUILDING_FLAG_LEN, BUILDING_FLAG_POS> AFBuildingFlag;
+    typedef
+    BitField<BitVector<BITS>, VD::U32, BUILDING_TIMER_LEN, BUILDING_TIMER_POS> AFBuildingTimer;
+    typedef
+    BitField<BitVector<BITS>, VD::U32, BUILDING_DIST_LEN, BUILDING_DIST_POS> AFBuildingDist;
 
     void SetReadyToBuild(T& us) const
     {

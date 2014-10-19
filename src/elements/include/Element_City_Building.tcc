@@ -13,12 +13,11 @@ namespace MFM
   template <class CC>
   bool Element_City_Building<CC>::DoNBSidewalkCase(EventWindow<CC>& window) const
   {
-    MDist<R>& md = MDist<R>::get();
     SPoint sidewalk;
 
     if(window.FindRandomInVonNeumann(GetSidewalkType(), sidewalk))
     {
-      Dir swDir = Dirs::FromOffset(swDir);
+      Dir swDir = Dirs::FromOffset(sidewalk);
 
       SPoint adjs[2];
 
@@ -31,7 +30,7 @@ namespace MFM
         if(at.GetType() != TYPE())
         {
           T copyMe = window.GetCenterAtom();
-          u32 idx = LargetsVisibleIndex(window) + 1;
+          u32 idx = LargestVisibleIndex(window) + 1;
 
           if(idx <= GetMaxArea(copyMe))
           {
