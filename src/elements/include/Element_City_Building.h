@@ -203,20 +203,6 @@ namespace MFM
       return nowAt.Equals(maybeAt)?Element<CC>::COMPLETE_DIFFUSABILITY:0;
     }
 
-    bool MooreBorder(EventWindow<CC>& window, u32 type) const
-    {
-      SPoint pt;
-      for(u32 i = 0; i < Dirs::DIR_COUNT; i++)
-      {
-        Dirs::FillDir(pt, (Dir)i);
-        if(window.GetRelativeAtom(pt).GetType() == type)
-        {
-          return true;
-        }
-      }
-      return false;
-    }
-
     u32 LargestVisibleIndex(EventWindow<CC>& window) const
     {
       MDist<R>& md = MDist<R>::get();
