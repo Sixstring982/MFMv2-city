@@ -103,6 +103,16 @@ namespace MFM
                       Element_City_Car<CC>::THE_INSTANCE.
                                     GetDirection(window.GetRelativeAtom(carToMove)));
 
+      if(bestRoute == Dirs::DIR_COUNT)
+      {
+        /* Let's pick a random dir */
+        bestRoute = window.GetRandom().Create(Dirs::DIR_COUNT);
+        if(bestRoute & 1)
+        {
+          bestRoute = Dirs::CWDir(bestRoute);
+        }
+      }
+
       if(bestRoute != Dirs::DIR_COUNT)
       {
         SPoint bestDirPt;
@@ -111,30 +121,32 @@ namespace MFM
         if(window.GetRelativeAtom(bestDirPt).GetType() == GetCarType())
         {
           /* If it's a car we can just swap, but we need to redirect both cars. */
-          window.SwapAtoms(carToMove, bestDirPt);
 
-          T mover = window.GetRelativeAtom(bestDirPt);
-          Element_City_Car<CC>::THE_INSTANCE.SetDirection(mover, Dirs::FromOffset(bestDirPt));
-          window.SetRelativeAtom(bestDirPt, mover);
+          T movingCar = window.GetRelativeAtom(carToMove);
+          Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar,
+                                                          Dirs::FromOffset(bestDirPt));
 
-          T swapped = window.GetRelativeAtom(carToMove);
-          Element_City_Car<CC>::THE_INSTANCE.SetDirection(swapped,
+          T stoppedCar = window.GetRelativeAtom(bestDirPt);
+          Element_City_Car<CC>::THE_INSTANCE.SetDirection(stoppedCar,
                                              Dirs::OppositeDir(Dirs::FromOffset(carToMove)));
-          window.SetRelativeAtom(carToMove, swapped);
+
+          window.SetRelativeAtom(bestDirPt, movingCar);
+          window.SetRelativeAtom(carToMove, stoppedCar);
         }
         else if(window.GetRelativeAtom(bestDirPt).GetType() == GetStreetType())
         {
           /* Gotta be a street. We need to reconstruct the street with its correct direction. */
-          window.SwapAtoms(carToMove, bestDirPt);
 
-          T mover = window.GetRelativeAtom(bestDirPt);
-          Element_City_Car<CC>::THE_INSTANCE.SetDirection(mover, Dirs::FromOffset(bestDirPt));
-          window.SetRelativeAtom(bestDirPt, mover);
+          T movingCar = window.GetRelativeAtom(carToMove);
+          Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar,
+                                                          Dirs::FromOffset(bestDirPt));
 
-          T swapped = window.GetRelativeAtom(carToMove);
-          Element_City_Street<CC>::THE_INSTANCE.SetDirection(swapped,
+          T street = window.GetRelativeAtom(bestDirPt);
+          Element_City_Street<CC>::THE_INSTANCE.SetDirection(street,
                                                 Dirs::OppositeDir(Dirs::FromOffset(carToMove)));
-          window.SetRelativeAtom(carToMove, swapped);
+
+          window.SetRelativeAtom(bestDirPt, movingCar);
+          window.SetRelativeAtom(carToMove, street);
         }
         else
         {
