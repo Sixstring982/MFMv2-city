@@ -35,6 +35,7 @@
 #include "itype.h"
 #include "P3Atom.h"
 #include "Element_City_Park.h"
+#include "WindowScanner.h"
 
 namespace MFM
 {
@@ -60,8 +61,15 @@ namespace MFM
 
       MAX_TIMER_VALUE = (1 << BUILDING_TIMER_LEN) - 1,
 
-      BUILDING_DIST_POS = BUILDING_FLAG_POS + BUILDING_FLAG_LEN,
-      BUILDING_DIST_LEN = CityConstants::CITY_BUILDING_COUNT * 2
+      /*
+       * Split this into two bit fields becase accessing must be done
+       * in chuncks of 32 bits
+       */
+      BUILDING_DIST1_POS = BUILDING_FLAG_POS + BUILDING_FLAG_LEN,
+      BUILDING_DIST1_LEN = CityConstants::CITY_BUILDING_COUNT,
+
+      BUILDING_DIST2_POS = BUILDING_DIST1_POS + BUILDING_DIST1_LEN,
+      BUILDING_DIST2_LEN = CityConstants::CITY_BUILDING_COUNT
     };
 
     typedef
@@ -69,12 +77,14 @@ namespace MFM
     typedef
     BitField<BitVector<BITS>, VD::U32, BUILDING_TIMER_LEN, BUILDING_TIMER_POS> AFBuildingTimer;
     typedef
-    BitField<BitVector<BITS>, VD::U32, BUILDING_DIST_LEN, BUILDING_DIST_POS> AFBuildingDist;
+    BitField<BitVector<BITS>, VD::U32, BUILDING_DIST1_LEN, BUILDING_DIST2_POS> AFBuildingDist1;
+    typedef
+    BitField<BitVector<BITS>, VD::U32, BUILDING_DIST2_LEN, BUILDING_DIST2_POS> AFBuildingDist2;
 
     void SetReadyToBuild(T& us) const
     {
       AFBuildingFlag::Write(this->GetBits(us), 1);
-      AFBuildingDist::Write(this->GetBits(us), 0);
+      ClearBuildingCounts(us);
     }
 
     bool IsReadyToBuild(const T& us) const
@@ -105,7 +115,69 @@ namespace MFM
       }
     }
 
+    void ClearBuildingCounts(T& us) const
+    {
+      for(u32 i = 0; i < CityConstants::CITY_BUILDING_COUNT; i++)
+      {
+        SetBuildingCount(us, i, 3);
+      }
+    }
+
+    void SetBuildingCount(T& us, u32 buildingType, u32 buildingCount) const
+    {
+      if(buildingCount > 3)
+      {
+        FAIL(ILLEGAL_ARGUMENT);
+      }
+
+      u32 topBit = (buildingCount & 2) >> 1;
+      u32 botBit = (buildingCount & 1);
+
+      u32 topWord = AFBuildingDist1::Read(this->GetBits(us));
+      u32 botWord = AFBuildingDist2::Read(this->GetBits(us));
+
+      if(topBit)
+      {
+        topWord |= (1 << buildingType);
+      }
+      else
+      {
+        topWord &= ~(1 << buildingType);
+      }
+
+      if(botBit)
+      {
+        botWord |= (1 << buildingType);
+      }
+      else
+      {
+        botWord &= ~(1 << buildingType);
+      }
+
+      AFBuildingDist1::Write(this->GetBits(us), topWord);
+      AFBuildingDist2::Write(this->GetBits(us), botWord);
+    }
+
    public:
+    u32 GetBuildingCount(const T& us, u32 buildingType) const
+    {
+      u32 ans = 0;
+      u32 top = AFBuildingDist1::Read(this->GetBits(us));
+      u32 bot = AFBuildingDist2::Read(this->GetBits(us));
+
+      ans = ((top & (1 << buildingType)) > 0);
+      ans <<= 1;
+
+      ans |= ((bot & (1 << buildingType)) > 0);
+
+      if(ans < 0 || ans > 3)
+      {
+        FAIL(ILLEGAL_STATE);
+      }
+
+      return ans;
+    }
+
     static Element_City_Sidewalk THE_INSTANCE;
 
     static const u32 TYPE()
@@ -165,69 +237,53 @@ namespace MFM
       window.SetCenterAtom(newMe);
     }
 
+    u32 GetBuildingType() const;
+
+    u32 GetStreetType() const;
+
     void DoBuildingBehavior(EventWindow<CC>& window) const;
+
+    void UpdateBuildingCounts(EventWindow<CC>& window) const;
 
     void DoParkBehavior(EventWindow<CC>& window) const
     {
+      WindowScanner<CC> scanner(window);
       const u32 types[] =
       {
         TYPE(),
         Element_City_Park<CC>::THE_INSTANCE.GetType()
       };
-      if(IsMooreSurroundedBy(window, types, sizeof(types)/sizeof(u32)))
+      SPoint not_used;
+      if(scanner.FindRandomInVonNeumann(types[0], not_used) +
+         scanner.FindRandomInVonNeumann(types[1], not_used) == 4)
       {
         window.SetCenterAtom(Element_City_Park<CC>::THE_INSTANCE.GetDefaultAtom());
       }
     }
 
-    bool CanSeeElementOfType(EventWindow<CC>& window, const u32 type, u32 radius) const
-    {
-      MDist<R>& md = MDist<R>::get();
-      for(u32 i = md.GetFirstIndex(1); i <= md.GetLastIndex(radius); i++)
-      {
-        if(window.GetRelativeAtom(md.GetPoint(i)).GetType() == type)
-        {
-          return true;
-        }
-      }
-      return false;
-    }
-
-
-    bool IsMooreSurroundedBy(EventWindow<CC>& window, const u32* types, u32 typeCount) const
-    {
-      MDist<R>& md = MDist<R>::get();
-
-      for(u32 i = md.GetFirstIndex(1); i <= md.GetLastIndex(1); i++)
-      {
-        SPoint pt = md.GetPoint(i);
-        bool hasOne = false;
-        for(u32 j = 0; j < typeCount; j++)
-        {
-          if(window.GetRelativeAtom(pt).GetType() == types[j])
-          {
-            hasOne = true;
-          }
-        }
-        if(!hasOne)
-        {
-          return false;
-        }
-      }
-      return true;
-    }
-
     virtual void Behavior(EventWindow<CC>& window) const
     {
+      WindowScanner<CC> scanner(window);
+      SPoint not_used;
       DoParkBehavior(window);
 
       if(IsReadyToBuild(window.GetCenterAtom()))
       {
         DoBuildingBehavior(window);
+        UpdateBuildingCounts(window);
       }
       else
       {
         DoTimerBehavior(window);
+
+        if(scanner.FindRandomInVonNeumann(GetBuildingType(), not_used) > 0)
+        {
+          /* Building bordering us, meaning ticking the timer is
+             essentially useless. */
+          T newMe = window.GetCenterAtom();
+          SetReadyToBuild(newMe);
+          window.SetCenterAtom(newMe);
+        }
       }
     }
   };

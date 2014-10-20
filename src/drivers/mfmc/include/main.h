@@ -15,5 +15,6 @@
 #include "Element_City_Intersection.h"
 #include "Element_City_Park.h"
 #include "Element_City_Building.h"
+#include "Element_City_Car.h"
 
 #endif /* MAIN_H */

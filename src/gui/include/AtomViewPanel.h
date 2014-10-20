@@ -135,9 +135,16 @@ namespace MFM
         element->AppendDescription(m_atom, desc);
         const char* zstr = desc.GetZString();
 
+        OString64 atomBody;
+        AtomSerializer<CC> serializer(*m_atom);
+        atomBody.Printf("%@", &serializer);
+
         d.SetFont(FONT_ASSET_HELPPANEL_SMALL);
         d.BlitBackedText(zstr, UPoint(4 + ATOM_DRAW_SIZE, 28),
                          MakeUnsigned(d.GetTextSize(zstr)));
+
+        d.BlitBackedText(atomBody.GetZString(), UPoint(0, 32),
+                         MakeUnsigned(d.GetTextSize(atomBody.GetZString())));
 
         PaintDisplayAtomicControllers(d, *m_atom, element);
       }

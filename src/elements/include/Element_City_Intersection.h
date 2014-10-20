@@ -140,6 +140,16 @@ namespace MFM
    private:
     void InitializeIntersection(T& atom, EventWindow<CC>& window) const;
 
+    void DoRouting(EventWindow<CC>& window) const;
+
+    u32 GetStreetType() const;
+
+    u32 GetCarType() const;
+
+    u32 GetSidewalkType() const;
+
+    Dir FindBestRoute(EventWindow<CC>& window, u32 destinationType, Dir comingFrom) const;
+
    public:
     virtual void Behavior(EventWindow<CC>& window) const
     {
@@ -150,6 +160,10 @@ namespace MFM
         SetInitialized(newAtom);
 
         window.SetCenterAtom(newAtom);
+      }
+      else
+      {
+        DoRouting(window);
       }
     }
   };

@@ -69,6 +69,7 @@ namespace MFM
       this->NeedElement(&Element_City_Intersection<CC>::THE_INSTANCE);
       this->NeedElement(&Element_City_Park<CC>::THE_INSTANCE);
       this->NeedElement(&Element_City_Building<CC>::THE_INSTANCE);
+      this->NeedElement(&Element_City_Car<CC>::THE_INSTANCE);
     }
 
   public:

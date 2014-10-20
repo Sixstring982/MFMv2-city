@@ -141,7 +141,7 @@ namespace MFM
     Element_City_Building() :
       Element<CC>(MFM_UUID_FOR("CityBuilding", BUILDING_VERSION)),
       m_carSpawnOdds(this, "carSpawnOdds", "Car Spawn Odds",
-                     "Odds of a building spawning a car.", 1, 1000, 10000)
+                     "Odds of a building spawning a car.", 1, 5000, 10000)
     {
       Element<CC>::SetAtomicSymbol("Bd");
       Element<CC>::SetName("City Building");
@@ -161,7 +161,7 @@ namespace MFM
 
     virtual u32 DefaultPhysicsColor() const
     {
-      return 0xff85C98B;
+      return 0xff800000;
     }
 
     virtual u32 DefaultLowlightColor() const
@@ -225,8 +225,9 @@ namespace MFM
       return largestIdx;
     }
 
-
     u32 GetSidewalkType() const;
+
+    u32 GetStreetType() const;
 
     bool DoNBSidewalkCase(EventWindow<CC>& window) const;
 
@@ -286,6 +287,10 @@ namespace MFM
       }
     }
 
+    T MakeRandomCar(u32 myBuildingType, Random& rand) const;
+
+    void SpawnCar(EventWindow<CC>& window) const;
+
    public:
     virtual void Behavior(EventWindow<CC>& window) const
     {
@@ -299,6 +304,7 @@ namespace MFM
       {
         if(window.GetRandom().OneIn(m_carSpawnOdds.GetValue()))
         {
+          SpawnCar(window);
         }
 
         SpawnNextBuilding(window);
