@@ -51,6 +51,7 @@ namespace MFM
 
       for(u32 i = 0; i < 2; i++)
       {
+        buildings[i] *= 2; /* Was pointing at sidewalk */
         if(window.GetRelativeAtom(buildings[i]).GetType() == GetBuildingType())
         {
           if(Element_City_Building<CC>::THE_INSTANCE.GetSubType(
