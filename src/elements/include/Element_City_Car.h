@@ -184,6 +184,8 @@ namespace MFM
 
     u32 GetBuildingType() const;
 
+    void ReplaceCenterWithStreet(EventWindow<CC>& window) const;
+
    public:
     virtual void Behavior(EventWindow<CC>& window) const;
 

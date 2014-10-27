@@ -73,9 +73,9 @@ namespace MFM
 
     u32 bestRoad = 0;
     bool foundRoad = false;
-    for(u32 i = 0; i < 4; i++)
+    for(u32 i = 1; i < 4; i++)
     {
-      if(roadFitness[i] > roadFitness[bestRoad])
+      if(roadFitness[i] < roadFitness[bestRoad])
       {
         bestRoad = i;
         foundRoad = true;
@@ -120,6 +120,20 @@ namespace MFM
 
         if(window.GetRelativeAtom(bestDirPt).GetType() == GetCarType())
         {
+
+          /* If it's us, just change direction and move on. */
+          if(bestDirPt.Equals(carToMove))
+          {
+            T uTurnCar = window.GetRelativeAtom(carToMove);
+            Element_City_Car<CC>::THE_INSTANCE.
+                SetDirection(uTurnCar,
+                             Dirs::OppositeDir(
+                               Element_City_Car<CC>::THE_INSTANCE.
+                                   GetDirection(uTurnCar)));
+            window.SetRelativeAtom(carToMove, uTurnCar);
+            return;
+          }
+
           /* If it's a car we can just swap, but we need to redirect both cars. */
 
           T movingCar = window.GetRelativeAtom(carToMove);
