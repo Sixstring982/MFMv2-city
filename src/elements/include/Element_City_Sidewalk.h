@@ -53,7 +53,10 @@ namespace MFM
       R = P::EVENT_WINDOW_RADIUS,
       BITS = P::BITS_PER_ATOM,
 
-      BUILDING_FLAG_POS = P3Atom<P>::ATOM_FIRST_STATE_BIT,
+      MAP_REBUILD_POS = P3Atom<P>::ATOM_FIRST_STATE_BIT,
+      MAP_REBUILD_LEN = 1,
+
+      BUILDING_FLAG_POS = MAP_REBUILD_POS + MAP_REBUILD_LEN,
       BUILDING_FLAG_LEN = 1,
 
       BUILDING_TIMER_POS = BUILDING_FLAG_POS + BUILDING_FLAG_LEN,
@@ -73,6 +76,8 @@ namespace MFM
     };
 
     typedef
+    BitField<BitVector<BITS>, VD::U32, MAP_REBUILD_LEN, MAP_REBUILD_POS> AFMapRebuildFlag;
+    typedef
     BitField<BitVector<BITS>, VD::U32, BUILDING_FLAG_LEN, BUILDING_FLAG_POS> AFBuildingFlag;
     typedef
     BitField<BitVector<BITS>, VD::U32, BUILDING_TIMER_LEN, BUILDING_TIMER_POS> AFBuildingTimer;
@@ -87,11 +92,26 @@ namespace MFM
       ClearBuildingCounts(us);
     }
 
+   public:
     bool IsReadyToBuild(const T& us) const
     {
       return AFBuildingFlag::Read(this->GetBits(us)) != 0;
     }
 
+    void SetRebuildFlag(T& us) const
+    {
+      AFBuildingFlag::Write(this->GetBits(us), 0);
+      AFMapRebuildFlag::Write(this->GetBits(us), 1);
+      ClearBuildingCounts(us);
+      SetBuildingTimer(us, 0);
+    }
+
+    bool IsRebuilding(const T& us) const
+    {
+      return AFMapRebuildFlag::Read(this->GetBits(us)) > 0;
+    }
+
+   private:
     u32 GetBuildingTimer(const T& us) const
     {
       return AFBuildingTimer::Read(this->GetBits(us));
@@ -112,6 +132,7 @@ namespace MFM
       else
       {
         SetReadyToBuild(us);
+        AFMapRebuildFlag::Write(this->GetBits(us), 0);
       }
     }
 
@@ -245,6 +266,26 @@ namespace MFM
 
     void UpdateBuildingCounts(EventWindow<CC>& window) const;
 
+    bool LookForRebuild(EventWindow<CC>& window) const
+    {
+      WindowScanner<CC> scanner(window);
+      SPoint sidewalk;
+
+      if(scanner.FindRandomInVonNeumann(TYPE(), sidewalk) > 0)
+      {
+        if(IsRebuilding(window.GetRelativeAtom(sidewalk)) &&
+           (GetBuildingTimer(window.GetRelativeAtom(sidewalk)) <
+            MAX_TIMER_VALUE * 0.2))
+        {
+          T newCen = window.GetCenterAtom();
+          SetRebuildFlag(newCen);
+          window.SetCenterAtom(newCen);
+          return true;
+        }
+      }
+      return false;
+    }
+
     void DoParkBehavior(EventWindow<CC>& window) const
     {
       WindowScanner<CC> scanner(window);
@@ -267,8 +308,16 @@ namespace MFM
       SPoint not_used;
       DoParkBehavior(window);
 
-      if(IsReadyToBuild(window.GetCenterAtom()))
+      if(IsRebuilding(window.GetCenterAtom()))
       {
+        DoTimerBehavior(window);
+      }
+      else if(IsReadyToBuild(window.GetCenterAtom()))
+      {
+        if(LookForRebuild(window))
+        {
+          return;
+        }
         DoBuildingBehavior(window);
         UpdateBuildingCounts(window);
       }
@@ -276,13 +325,20 @@ namespace MFM
       {
         DoTimerBehavior(window);
 
-        if(scanner.FindRandomInVonNeumann(GetBuildingType(), not_used) > 0)
+        u32 sidewalkCount = scanner.FindRandomInVonNeumann(TYPE(), not_used);
+        if((sidewalkCount > 0 && IsReadyToBuild(window.GetRelativeAtom(not_used))) ||
+           (scanner.FindRandomInVonNeumann(GetBuildingType(), not_used) > 0))
         {
-          /* Building bordering us, meaning ticking the timer is
-             essentially useless. */
+          /* Building bordering us or my neighbor is ready, meaning
+             ticking the timer is essentially useless. */
+
+          /* Not so fast! If the city esplodes, the timer helps
+           * building from growing where they're not supposed to.*/
+          /*
           T newMe = window.GetCenterAtom();
           SetReadyToBuild(newMe);
           window.SetCenterAtom(newMe);
+          */
         }
       }
     }

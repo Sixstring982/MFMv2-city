@@ -2,6 +2,7 @@
 
 #include "Element_City_Building.h"
 #include "Element_City_Car.h"
+#include "Element_City_Intersection.h"
 #include "Element_City_Street.h"
 #include "Element_City_Sidewalk.h"
 
@@ -17,6 +18,18 @@ namespace MFM
   u32 Element_City_Building<CC>::GetStreetType() const
   {
     return Element_City_Street<CC>::THE_INSTANCE.GetType();
+  }
+
+  template <class CC>
+  u32 Element_City_Building<CC>::GetIntersectionType() const
+  {
+    return Element_City_Intersection<CC>::THE_INSTANCE.GetType();
+  }
+
+  template <class CC>
+  u32 Element_City_Building<CC>::GetCarType() const
+  {
+    return Element_City_Car<CC>::THE_INSTANCE.GetType();
   }
 
   template <class CC>
@@ -37,12 +50,28 @@ namespace MFM
       for(u32 i = 0; i < 2; i++)
       {
         const T& at = window.GetRelativeAtom(adjs[i]);
-        if(at.GetType() != TYPE())
+        if(at.GetType() == Element_Empty<CC>::THE_INSTANCE.GetType())
         {
           T copyMe = window.GetCenterAtom();
           u32 idx = LargestVisibleIndex(window) + 1;
 
-          if(idx <= GetMaxArea(copyMe))
+          MDist<R>& md = MDist<R>::get();
+          bool foundSidewalk = false;
+          for(u32 j = md.GetFirstIndex(1); j <= md.GetLastIndex(1); j++)
+          {
+            if(window.GetRelativeAtom(md.GetPoint(j) + adjs[i]).GetType() ==
+               GetSidewalkType())
+            {
+              if(Element_City_Sidewalk<CC>::THE_INSTANCE.
+                 IsReadyToBuild(window.GetRelativeAtom(md.GetPoint(j) + adjs[i])))
+              {
+                foundSidewalk = true;
+                break;
+              }
+            }
+          }
+
+          if(idx <= GetMaxArea(copyMe) && foundSidewalk)
           {
             SetAreaIndex(copyMe, idx);
             window.SetRelativeAtom(adjs[i], copyMe);
@@ -88,9 +117,23 @@ namespace MFM
   }
 
   template <class CC>
-  bool Element_City_Building<CC>::DoNBCornerGrowthCase(EventWindow<CC>& window) const
+  bool Element_City_Building<CC>::DoNoSidewalkConsume(EventWindow<CC>& window) const
   {
-    return false;
+    WindowScanner<CC> scanner(window);
+
+    if(scanner.IsBorderingVonNeumann(GetSidewalkType()) &&
+       !scanner.CanSeeAtomOfType(GetStreetType(), 2) &&
+       !scanner.CanSeeAtomOfType(GetIntersectionType(), 2) &&
+       !scanner.CanSeeAtomOfType(GetCarType(), 2))
+    {
+      /* We're technically not on the street at this point. Let's get
+       * changed to a rebuilding sidewalk. */
+
+      T newCen = Element_City_Sidewalk<CC>::THE_INSTANCE.GetDefaultAtom();
+      Element_City_Sidewalk<CC>::THE_INSTANCE.SetRebuildFlag(newCen);
+      window.SetCenterAtom(newCen);
+    }
+    return true;
   }
 
   template <class CC>
@@ -100,7 +143,7 @@ namespace MFM
     {
       if(!DoNBPerpGrowthCase(window))
       {
-        DoNBCornerGrowthCase(window);
+        DoNoSidewalkConsume(window);
       }
     }
   }

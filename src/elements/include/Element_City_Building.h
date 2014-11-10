@@ -176,19 +176,19 @@ namespace MFM
       case 0x0: return 0xffff0000;
       case 0x1: return 0xff00ff00;
       case 0x2: return 0xff0000ff;
-      case 0x3: return 0xffff00ff;
-      case 0x4: return 0xffffff00;
-      case 0x5: return 0xff00ffff;
-      case 0x6: return 0xffff00ff;
-      case 0x7: return 0xffff0000;
-      case 0x8: return 0xff00ff00;
-      case 0x9: return 0xff0000ff;
+      case 0x3: return 0xff00ffff;
+      case 0x4: return 0xffff00ff;
+      case 0x5: return 0xffffff00;
+      case 0x6: return 0xff7f0000;
+      case 0x7: return 0xff007f00;
+      case 0x8: return 0xff00007f;
+      case 0x9: return 0xff007f7f;
       case 0xa: return 0xff7f007f;
       case 0xb: return 0xff7f7f00;
-      case 0xc: return 0xff007f7f;
-      case 0xd: return 0xff7f007f;
-      case 0xe: return 0xff7f0000;
-      case 0xf: return 0xff007f00;
+      case 0xc: return 0xffffffff;
+      case 0xd: return 0xff400040;
+      case 0xe: return 0xff7f7f7f;
+      case 0xf: return 0xff404040;
       default:  return 0xff800000;
       }
     }
@@ -229,11 +229,15 @@ namespace MFM
 
     u32 GetStreetType() const;
 
+    u32 GetIntersectionType() const;
+
+    u32 GetCarType() const;
+
     bool DoNBSidewalkCase(EventWindow<CC>& window) const;
 
     bool DoNBPerpGrowthCase(EventWindow<CC>& window) const;
 
-    bool DoNBCornerGrowthCase(EventWindow<CC>& window) const;
+    bool DoNoSidewalkConsume(EventWindow<CC>& window) const;
 
     void SpawnNextBuilding(EventWindow<CC>& window) const;
 

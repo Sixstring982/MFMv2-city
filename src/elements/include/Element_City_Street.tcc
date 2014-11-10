@@ -29,6 +29,12 @@ namespace MFM
   }
 
   template <class CC>
+  inline u32 Element_City_Street<CC>::BuildingType() const
+  {
+    return Element_City_Building<CC>::THE_INSTANCE.GetType();
+  }
+
+  template <class CC>
   void Element_City_Street<CC>::DoStreetAndSidewalk(EventWindow<CC>& window, Dir d) const
   {
     SPoint offset;
@@ -78,6 +84,12 @@ namespace MFM
         window.SetRelativeAtom(offset * 2, GetIntersection());
         window.SetRelativeAtom(offset, window.GetCenterAtom());
       }
+    }
+
+    /* If a building is in front of us, become a sidewalk. */
+    if(window.GetRelativeAtom(offset).GetType() == BuildingType())
+    {
+      window.SetCenterAtom(GetSidewalk());
     }
   }
 }

@@ -179,6 +179,8 @@ namespace MFM
 
     inline u32 SidewalkType() const;
 
+    inline u32 BuildingType() const;
+
    public:
     virtual void Behavior(EventWindow<CC>& window) const
     {

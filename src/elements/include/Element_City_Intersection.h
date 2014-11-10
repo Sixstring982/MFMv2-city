@@ -57,7 +57,7 @@ namespace MFM
     typedef BitField<BitVector<BITS>, VD::U32, INITIALIZED_LEN, INITIALIZED_POS> AFInitBits;
 
    private:
-    ElementParameterS32<CC> m_streetCreateOdds;
+    ElementParameterS32<CC> m_minCreatedStreets;
 
    public:
     static Element_City_Intersection THE_INSTANCE;
@@ -84,9 +84,9 @@ namespace MFM
 
     Element_City_Intersection() :
       Element<CC>(MFM_UUID_FOR("CityIntersection", CITY_VERSION)),
-      m_streetCreateOdds(this, "streetCreateOdds",
-                         "Street Odds",
-                         "Odds of creating a street", 1, 1, 10)
+      m_minCreatedStreets(this, "minCreatedStreets",
+                          "Minimum streets created",
+                          "Minimum streets created", 1, 4, 4)
     {
       Element<CC>::SetAtomicSymbol("In");
       Element<CC>::SetName("City Intersection");
@@ -140,6 +140,8 @@ namespace MFM
    private:
     void InitializeIntersection(T& atom, EventWindow<CC>& window) const;
 
+    void UTurnCar(EventWindow<CC>& window, SPoint& carAt) const;
+
     void DoRouting(EventWindow<CC>& window) const;
 
     u32 GetStreetType() const;
@@ -148,7 +150,13 @@ namespace MFM
 
     u32 GetSidewalkType() const;
 
+    u32 IsRelDirCarOrStreet(EventWindow<CC> window, Dir d) const;
+
     Dir FindBestRoute(EventWindow<CC>& window, u32 destinationType, Dir comingFrom) const;
+
+    void CreateStreetFromEmpty(EventWindow<CC>& window, Dir d) const;
+
+    void CreateSidewalkFromEmpty(EventWindow<CC>& window, Dir d) const;
 
    public:
     virtual void Behavior(EventWindow<CC>& window) const

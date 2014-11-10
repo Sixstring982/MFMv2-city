@@ -1,0 +1,7 @@
+If a building can't see a street or an intersection from a sidewalk, he needs to be consumed by a neighboring building.
+
+If buildings are changing, the sidewalks need to be able to rebuild their maps.
+Sidewalks rebuild as long as a neighbor's timer is above 80% full and rebuilding.
+Sidewalks remap if they see a block across the street do the same, but only with a small random chance.
+
+Check that roads create sidewalks near intersections.

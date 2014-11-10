@@ -11,7 +11,8 @@ namespace MFM
     SPoint emptyPt;
     if(scanner.FindEmptyInVonNeumann(emptyPt) > 0)
     {
-      window.SetRelativeAtom(emptyPt, Element_City_Building<CC>::THE_INSTANCE.GetDefaultAtom());
+      window.SetRelativeAtom(emptyPt,
+                             Element_City_Building<CC>::THE_INSTANCE.GetDefaultAtom());
     }
   }
 
