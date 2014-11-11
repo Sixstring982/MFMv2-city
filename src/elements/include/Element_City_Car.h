@@ -58,6 +58,8 @@ namespace MFM
       GAS_POS = DEST_TYPE_POS + DEST_TYPE_LEN,
       GAS_LEN = 8,
 
+      MAX_GAS = 1 << GAS_LEN - 1,
+
       DIRECTION_POS = GAS_POS + GAS_LEN,
       DIRECTION_LEN = 4
     };
@@ -91,7 +93,7 @@ namespace MFM
 
     void FillTank(T& us) const
     {
-      AFGas::Write(this->GetBits(us), (1 << GAS_LEN) - 1);
+      AFGas::Write(this->GetBits(us), MAX_GAS);
     }
 
     u32 GetGas(const T& us) const

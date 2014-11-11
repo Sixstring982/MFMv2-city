@@ -50,14 +50,92 @@ namespace MFM
       R = P::EVENT_WINDOW_RADIUS,
       BITS = P::BITS_PER_ATOM,
 
+
+      INITIALIZED_POS = P3Atom<P>::ATOM_FIRST_STATE_BIT,
       INITIALIZED_LEN = 1,
-      INITIALIZED_POS = BITS - INITIALIZED_LEN - 1
+
+      CANAL_MAP1_POS = INITIALIZED_POS + INITIALIZED_LEN,
+      CANAL_MAP1_LEN = CityConstants::CITY_BUILDING_COUNT,
+
+      CANAL_MAP2_POS = CANAL_MAP1_POS + CANAL_MAP1_LEN,
+      CANAL_MAP2_LEN = CityConstants::CITY_BUILDING_COUNT
     };
 
     typedef BitField<BitVector<BITS>, VD::U32, INITIALIZED_LEN, INITIALIZED_POS> AFInitBits;
 
+    typedef BitField<BitVector<BITS>, VD::U32, CANAL_MAP1_LEN, CANAL_MAP1_POS> AFCanal1;
+    typedef BitField<BitVector<BITS>, VD::U32, CANAL_MAP2_LEN, CANAL_MAP2_POS> AFCanal2;
+
    private:
     ElementParameterS32<CC> m_minCreatedStreets;
+
+    void RandomizeCanal(T& us, Random& rand) const
+    {
+      for(u32 i = 0; i < CANAL_MAP1_LEN; i++)
+      {
+        AFCanal1::Write(this->GetBits(us), !!rand.CreateBool());
+        AFCanal2::Write(this->GetBits(us), !!rand.CreateBool());
+      }
+    }
+
+    Dir GetCanalDir(const T& us, u32 buildingType) const
+    {
+      u32 ans = 0;
+      u32 top = AFCanal1::Read(this->GetBits(us));
+      u32 bot = AFCanal2::Read(this->GetBits(us));
+
+      ans = ((top & (1 << buildingType)) > 0);
+      ans <<= 1;
+
+      ans |= ((bot & (1 << buildingType)) > 0);
+
+      if(ans < 0 || ans > 3)
+      {
+        FAIL(ILLEGAL_STATE);
+      }
+
+      return (Dir)(ans * 2);
+    }
+
+    void SetCanalDir(T& us, u32 destType, Dir dir) const
+    {
+      if(Dirs::IsCorner(dir))
+      {
+        FAIL(ILLEGAL_ARGUMENT);
+      }
+      dir /= 2;
+      if(dir > 3)
+      {
+        FAIL(ILLEGAL_ARGUMENT);
+      }
+
+      u32 topBit = (dir & 2) >> 1;
+      u32 botBit = (dir & 1);
+
+      u32 topWord = AFCanal1::Read(this->GetBits(us));
+      u32 botWord = AFCanal2::Read(this->GetBits(us));
+
+      if(topBit)
+      {
+        topWord |= (1 << destType);
+      }
+      else
+      {
+        topWord &= ~(1 << destType);
+      }
+
+      if(botBit)
+      {
+        botWord |= (1 << destType);
+      }
+      else
+      {
+        botWord &= ~(1 << destType);
+      }
+
+      AFCanal1::Write(this->GetBits(us), topWord);
+      AFCanal2::Write(this->GetBits(us), botWord);
+    }
 
    public:
     static Element_City_Intersection THE_INSTANCE;
@@ -152,6 +230,8 @@ namespace MFM
 
     u32 IsRelDirCarOrStreet(EventWindow<CC> window, Dir d) const;
 
+    bool CanalIsValid(EventWindow<CC>& window, u32 destType) const;
+
     Dir FindBestRoute(EventWindow<CC>& window, u32 destinationType, Dir comingFrom) const;
 
     void CreateStreetFromEmpty(EventWindow<CC>& window, Dir d) const;
@@ -165,6 +245,7 @@ namespace MFM
       {
         T newAtom = window.GetCenterAtom();
         InitializeIntersection(newAtom, window);
+        RandomizeCanal(newAtom, window.GetRandom());
         SetInitialized(newAtom);
 
         window.SetCenterAtom(newAtom);

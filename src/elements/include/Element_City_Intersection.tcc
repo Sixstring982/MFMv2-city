@@ -35,27 +35,60 @@ namespace MFM
     return atom.GetType() == GetCarType() || atom.GetType() == GetStreetType();
   }
 
-  /* This returns Dirs::DIR_COUNT if this is a screwy intersection and the
-   * waiting car should just be routed to a random existing street. */
+  template <class CC>
+  bool Element_City_Intersection<CC>::CanalIsValid(EventWindow<CC>& window,
+                                                   u32 destType) const
+  {
+    Dir canal = GetCanalDir(window.GetCenterAtom(), destType);
+    SPoint canalPt;
+    Dirs::FillDir(canalPt, canal);
+    return window.GetRelativeAtom(canalPt).GetType() == GetStreetType();
+  }
+
   template <class CC>
   Dir Element_City_Intersection<CC>::FindBestRoute(EventWindow<CC>& window,
                                                    u32 destinationType,
                                                    Dir comingFrom) const
   {
-    SPoint roads[4]; /* N E S W */
-    u32 roadFitness[4] = { 100, 100, 100, 100 };
+    Dir canal = GetCanalDir(window.GetCenterAtom(), destinationType);
 
-    Dir d = Dirs::NORTH;
-    for(u32 i = 0; i < 4; i++)
+    /* First, see if the canal will help get him in the right
+     * direction.  If the canal points in a direction that he isn't
+     * coming from, route him towards the canal.
+     */
+    if (CanalIsValid(window, destinationType) &&
+        canal != Dirs::OppositeDir(comingFrom))
     {
-      Dirs::FillDir(roads[i], d);
+      return canal;
+    }
 
+    /*
+     * The canal seems to have been wrong... Let's go ahead and find
+     * another direction and set the canal accordingly.
+     */
+
+    u32 roadFitness[] = {100, 100, 100};
+    SPoint roads[3];
+    Dir dirs[3]; /* The non-canal directions */
+    u32 i = 0;
+    for (Dir d = Dirs::NORTH; d < Dirs::DIR_COUNT; d += 2)
+    {
+      if(d != Dirs::OppositeDir(comingFrom))
+      {
+        dirs[i] = d;
+        Dirs::FillDir(roads[i], dirs[i]);
+        i++;
+      }
+    }
+
+    for(u32 i = 0; i < 3; i++)
+    {
       if(window.IsLiveSite(roads[i]))
       {
         if(window.GetRelativeAtom(roads[i]).GetType() != GetStreetType() &&
            window.GetRelativeAtom(roads[i]).GetType() != GetCarType())
         {
-          roadFitness[i] += 100;
+          roadFitness[i] += 100; /* That isn't a road! */
         }
         else
         {
@@ -64,11 +97,11 @@ namespace MFM
             SPoint edgeSidewalk;
             if(j == 0)
             {
-              Dirs::FillDir(edgeSidewalk, Dirs::CWDir(Dirs::CWDir(d)));
+              Dirs::FillDir(edgeSidewalk, Dirs::CWDir(Dirs::CWDir(dirs[i])));
             }
             else
             {
-              Dirs::FillDir(edgeSidewalk, Dirs::CCWDir(Dirs::CCWDir(d)));
+              Dirs::FillDir(edgeSidewalk, Dirs::CCWDir(Dirs::CCWDir(dirs[i])));
             }
 
             edgeSidewalk = edgeSidewalk + roads[i];
@@ -96,49 +129,27 @@ namespace MFM
           }
         }
       }
-      d = Dirs::CWDir(Dirs::CWDir(d));
     }
 
     u32 bestDirValue = MIN(roadFitness[0],
-                           MIN(roadFitness[1],
-                               MIN(roadFitness[2], roadFitness[3])));
+                           MIN(roadFitness[1], roadFitness[2]));
     u32 bestCount = 0;
-    Dir dirsOfMin[4];
+    Dir dirsOfMin[3];
 
-    for(u32 i = 0; i < 4; i++)
+    for(u32 i = 0; i < 3; i++)
     {
       if(roadFitness[i] == bestDirValue)
       {
-        dirsOfMin[bestCount++] = i * 2;
+        dirsOfMin[bestCount++] = dirs[i];
       }
     }
 
     Dir bestDir = dirsOfMin[window.GetRandom().Create(bestCount)];
 
-    /* If we're going to U-turn the car, let's tell him to go randomly. */
-    if(bestDir == Dirs::OppositeDir(comingFrom))
-    {
-      u32 odds = window.GetRandom().Create(100);
-
-      if(odds < 1)
-      {
-        bestDir = Dirs::OppositeDir(comingFrom);
-      }
-      else if(odds < 34 && IsRelDirCarOrStreet(window,
-                                               Dirs::CCWDir(Dirs::CCWDir(comingFrom))))
-      {
-        bestDir = Dirs::CCWDir(Dirs::CCWDir(comingFrom));
-      }
-      else if(odds < 67 && IsRelDirCarOrStreet(window,
-                                               Dirs::OppositeDir(comingFrom)))
-      {
-        bestDir = comingFrom;
-      }
-      else if(IsRelDirCarOrStreet(window, Dirs::CWDir(Dirs::CWDir(comingFrom))))
-      {
-        bestDir = Dirs::CWDir(Dirs::CWDir(comingFrom));
-      }
-    }
+    /* Now that we have this, reassign the canal. */
+    T newAtom = window.GetCenterAtom();
+    SetCanalDir(newAtom, destinationType, bestDir);
+    window.SetCenterAtom(newAtom);
 
     return bestDir;
   }
@@ -162,23 +173,75 @@ namespace MFM
   {
     WindowScanner<CC> scanner(window);
     SPoint carToMove;
+    u32 streetsAndCars;
 
     if(scanner.FindRandomInVonNeumann(GetCarType(), carToMove) > 0)
     {
+      streetsAndCars =
+      scanner.CountVonNeumannNeighbors(GetCarType()) +
+      scanner.CountVonNeumannNeighbors(GetStreetType());
       /* If there's nowhere else to go, turn around. */
-      if(scanner.CountVonNeumannNeighbors(GetCarType()) +
-         scanner.CountVonNeumannNeighbors(GetStreetType()) == 1)
+      if (streetsAndCars == 1)
       {
         UTurnCar(window, carToMove);
         return;
       }
 
-      Dir bestRoute = FindBestRoute(window,
-                      Element_City_Car<CC>::THE_INSTANCE.
-                                    GetDestType(window.GetRelativeAtom(carToMove)),
-                      Element_City_Car<CC>::THE_INSTANCE.
-                                    GetDirection(window.GetRelativeAtom(carToMove)));
+      Dir bestRoute = Dirs::NORTH;
       SPoint bestDirPt;
+
+      /* Stupid two-sidewalk corner cases */
+      if (streetsAndCars == 2)
+      {
+        Dir start = Dirs::FromOffset(carToMove);
+        SPoint pt;
+        bool found = true;
+        for(u32 i = 0; i < 3; i++)
+        {
+          start = Dirs::CWDir(Dirs::CWDir(start));
+          Dirs::FillDir(pt, start);
+          if ((window.GetRelativeAtom(pt).GetType() == GetCarType()) ||
+              (window.GetRelativeAtom(pt).GetType() == GetStreetType()))
+          {
+            bestRoute = start;
+            bestDirPt = pt;
+            break;
+          }
+        }
+        if (!found)
+        {
+          FAIL(ILLEGAL_STATE);
+        }
+        else if(window.GetRelativeAtom(pt).GetType() == GetStreetType())
+        {
+          /* It's a street, but we need to be careful. Let's give the
+           * car the same direction that the street has. */
+          T movingCar = window.GetRelativeAtom(carToMove);
+          Dir moveFrom = Element_City_Car<CC>::THE_INSTANCE.GetDirection(movingCar);
+
+          T street = window.GetRelativeAtom(bestDirPt);
+          Dir streetDir = Element_City_Street<CC>::THE_INSTANCE.GetDirection(street);
+          Element_City_Street<CC>::THE_INSTANCE.SetDirection(street, moveFrom);
+          if (streetDir == Dirs::OppositeDir(start))
+          {
+            streetDir = start; /* Don't point the car at the intersection again */
+          }
+          Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar, streetDir);
+
+          window.SetRelativeAtom(bestDirPt, movingCar);
+          window.SetRelativeAtom(carToMove, street);
+          return;
+        }
+        /* Otherwise, it's a car and the normal behavior is sufficient. */
+      }
+      else
+      {
+        bestRoute = FindBestRoute(window,
+                                  Element_City_Car<CC>::THE_INSTANCE.
+                                  GetDestType(window.GetRelativeAtom(carToMove)),
+                                  Element_City_Car<CC>::THE_INSTANCE.
+                                  GetDirection(window.GetRelativeAtom(carToMove)));
+      }
       Dirs::FillDir(bestDirPt, bestRoute);
 
       if(window.GetRelativeAtom(bestDirPt).GetType() == GetCarType())
@@ -193,12 +256,12 @@ namespace MFM
         /* If it's a car we can just swap, but we need to redirect both cars. */
 
         T movingCar = window.GetRelativeAtom(carToMove);
-        Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar,
-                                                        Dirs::FromOffset(bestDirPt));
+        Dir moveFrom = Element_City_Car<CC>::THE_INSTANCE.GetDirection(movingCar);
+        Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar, bestRoute);
 
         T stoppedCar = window.GetRelativeAtom(bestDirPt);
-        Element_City_Car<CC>::THE_INSTANCE.SetDirection(stoppedCar,
-                                                        Dirs::OppositeDir(Dirs::FromOffset(carToMove)));
+        Element_City_Car<CC>::THE_INSTANCE.SetDirection(stoppedCar, moveFrom);
+
 
         window.SetRelativeAtom(bestDirPt, movingCar);
         window.SetRelativeAtom(carToMove, stoppedCar);
@@ -208,20 +271,15 @@ namespace MFM
         /* Gotta be a street. We need to reconstruct the street with its correct direction. */
 
         T movingCar = window.GetRelativeAtom(carToMove);
-        Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar,
-                                                        Dirs::FromOffset(bestDirPt));
+        Dir moveFrom = Element_City_Car<CC>::THE_INSTANCE.GetDirection(movingCar);
+        Element_City_Car<CC>::THE_INSTANCE.SetDirection(movingCar, bestRoute);
 
         T street = window.GetRelativeAtom(bestDirPt);
-        Element_City_Street<CC>::THE_INSTANCE.SetDirection(street,
-                                                           Dirs::OppositeDir(Dirs::FromOffset(carToMove)));
+        Element_City_Street<CC>::THE_INSTANCE.
+                                 SetDirection(street, moveFrom);
 
         window.SetRelativeAtom(bestDirPt, movingCar);
         window.SetRelativeAtom(carToMove, street);
-      }
-      else
-      {
-        /* Crap, didn't find anything good. Screw it, find something next time.*/
-        /* We gotta do something though. Let's move that car randomly. */
       }
     }
   }
@@ -259,7 +317,7 @@ namespace MFM
                                                              EventWindow<CC>& window) const
   {
     Random& rand = window.GetRandom();
-    Dir dirs[4] = {Dirs::NORTH, Dirs::EAST, Dirs::SOUTH, Dirs::WEST};
+    Dir dirs[4] = { Dirs::NORTH, Dirs::EAST, Dirs::SOUTH, Dirs::WEST };
     SPoint offset;
 
     /* Shuffle dirs */

@@ -55,6 +55,7 @@ namespace MFM
     {
       ReplaceCenterWithStreet(window);
       LOG.Message("Out of gas!");
+
       return;
     }
     else
@@ -88,7 +89,7 @@ namespace MFM
              GetDestType(window.GetCenterAtom()))
           {
             /* Found a building! Finally. Report our gas usage. */
-            LOG.Message("Gas Usage: %d", GetGas(window.GetCenterAtom()));
+            LOG.Message("Gas Usage: %d", MAX_GAS - GetGas(window.GetCenterAtom()));
             ReplaceCenterWithStreet(window);
             return;
           }

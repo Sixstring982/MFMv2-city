@@ -5,3 +5,4 @@ Sidewalks rebuild as long as a neighbor's timer is above 80% full and rebuilding
 Sidewalks remap if they see a block across the street do the same, but only with a small random chance.
 
 Check that roads create sidewalks near intersections.
+Fix: Have intersections look at all roads in moore and create missing sidewalks near them.
