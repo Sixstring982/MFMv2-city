@@ -19,6 +19,14 @@ else
   endif
 endif
 
+ifdef CANAL_ROUTING
+	OPTFLAGS += -DCANAL_ROUTING
+endif
+
+ifdef RANDOM_ROUTING
+	OPTFLAGS += -DRANDOM_ROUTING
+endif
+
 ifndef PROFILE
 else
   OPTFLAGS := -pg -O99

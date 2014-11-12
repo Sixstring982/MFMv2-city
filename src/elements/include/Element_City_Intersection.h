@@ -232,7 +232,13 @@ namespace MFM
 
     bool CanalIsValid(EventWindow<CC>& window, u32 destType) const;
 
-    Dir FindBestRoute(EventWindow<CC>& window, u32 destinationType, Dir comingFrom) const;
+    Dir FindBestRouteCanal(EventWindow<CC>& window, u32 destinationType,
+                           Dir comingFrom) const;
+
+    Dir FindBestRouteStandard(EventWindow<CC>& window, u32 destinationType,
+                              Dir comingFrom) const;
+
+    Dir FindRandomRoute(EventWindow<CC>& window) const ;
 
     void CreateStreetFromEmpty(EventWindow<CC>& window, Dir d) const;
 

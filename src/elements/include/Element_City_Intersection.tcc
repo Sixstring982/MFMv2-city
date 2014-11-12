@@ -46,9 +46,15 @@ namespace MFM
   }
 
   template <class CC>
-  Dir Element_City_Intersection<CC>::FindBestRoute(EventWindow<CC>& window,
-                                                   u32 destinationType,
-                                                   Dir comingFrom) const
+  Dir Element_City_Intersection<CC>::FindRandomRoute(EventWindow<CC>& window) const
+  {
+    return (Dir)((window.GetRandom().Create(4)) * 2);
+  }
+
+  template <class CC>
+  Dir Element_City_Intersection<CC>::FindBestRouteCanal(EventWindow<CC>& window,
+                                                        u32 destinationType,
+                                                        Dir comingFrom) const
   {
     Dir canal = GetCanalDir(window.GetCenterAtom(), destinationType);
 
@@ -56,11 +62,13 @@ namespace MFM
      * direction.  If the canal points in a direction that he isn't
      * coming from, route him towards the canal.
      */
+
     if (CanalIsValid(window, destinationType) &&
         canal != Dirs::OppositeDir(comingFrom))
     {
       return canal;
     }
+
 
     /*
      * The canal seems to have been wrong... Let's go ahead and find
@@ -154,6 +162,92 @@ namespace MFM
     return bestDir;
   }
 
+
+  template <class CC>
+  Dir Element_City_Intersection<CC>::FindBestRouteStandard(EventWindow<CC>& window,
+                                                           u32 destinationType,
+                                                           Dir comingFrom) const
+  {
+    u32 roadFitness[] = {100, 100, 100, 100};
+    SPoint roads[4];
+    Dir dirs[4]; /* The non-canal directions */
+    u32 i = 0;
+    for (Dir d = Dirs::NORTH; d < Dirs::DIR_COUNT; d += 2)
+    {
+      dirs[i] = d;
+      Dirs::FillDir(roads[i], dirs[i]);
+      i++;
+    }
+
+    for(u32 i = 0; i < 4; i++)
+    {
+      if(window.IsLiveSite(roads[i]))
+      {
+        if(window.GetRelativeAtom(roads[i]).GetType() != GetStreetType() &&
+           window.GetRelativeAtom(roads[i]).GetType() != GetCarType())
+        {
+          roadFitness[i] += 100; /* That isn't a road! */
+        }
+        else
+        {
+          for(u32 j = 0; j < 2; j++)
+          {
+            SPoint edgeSidewalk;
+            if(j == 0)
+            {
+              Dirs::FillDir(edgeSidewalk, Dirs::CWDir(Dirs::CWDir(dirs[i])));
+            }
+            else
+            {
+              Dirs::FillDir(edgeSidewalk, Dirs::CCWDir(Dirs::CCWDir(dirs[i])));
+            }
+
+            edgeSidewalk = edgeSidewalk + roads[i];
+            if(window.GetRelativeAtom(edgeSidewalk).GetType() !=
+               Element_City_Sidewalk<CC>::THE_INSTANCE.GetType())
+            {
+              roadFitness[i] += 100; /* Don't want to go that way! */
+            }
+            else
+            {
+              if(Element_City_Sidewalk<CC>::THE_INSTANCE.
+                 IsReadyToBuild(window.GetRelativeAtom(edgeSidewalk)))
+              {
+                roadFitness[i] -=
+                3 - (
+                Element_City_Sidewalk<CC>::THE_INSTANCE.
+                GetBuildingCount(window.
+                                 GetRelativeAtom(edgeSidewalk), destinationType));
+              }
+              else
+              {
+                roadFitness[i]++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    u32 bestDirValue = MIN(roadFitness[0],
+                           MIN(roadFitness[1],
+                               MIN(roadFitness[2], roadFitness[3])));
+    u32 bestCount = 0;
+    Dir dirsOfMin[4];
+
+    for(u32 i = 0; i < 4; i++)
+    {
+      if(roadFitness[i] == bestDirValue)
+      {
+        dirsOfMin[bestCount++] = dirs[i];
+      }
+    }
+
+    Dir bestDir = dirsOfMin[window.GetRandom().Create(bestCount)];
+
+    return bestDir;
+  }
+
   template <class CC>
   void Element_City_Intersection<CC>::UTurnCar(EventWindow<CC>& window,
                                                SPoint& carAt) const
@@ -236,11 +330,25 @@ namespace MFM
       }
       else
       {
-        bestRoute = FindBestRoute(window,
-                                  Element_City_Car<CC>::THE_INSTANCE.
-                                  GetDestType(window.GetRelativeAtom(carToMove)),
-                                  Element_City_Car<CC>::THE_INSTANCE.
-                                  GetDirection(window.GetRelativeAtom(carToMove)));
+
+#ifdef RANDOM_ROUTING
+        bestRoute = FindRandomRoute(window);
+#elif defined CANAL_ROUTING
+        bestRoute = FindBestRouteCanal(
+          window,
+          Element_City_Car<CC>::THE_INSTANCE.
+          GetDestType(window.GetRelativeAtom(carToMove)),
+          Element_City_Car<CC>::THE_INSTANCE.
+          GetDirection(window.GetRelativeAtom(carToMove)));
+#else
+        bestRoute = FindBestRouteStandard(
+          window,
+          Element_City_Car<CC>::THE_INSTANCE.
+          GetDestType(window.GetRelativeAtom(carToMove)),
+          Element_City_Car<CC>::THE_INSTANCE.
+          GetDirection(window.GetRelativeAtom(carToMove)));
+#endif
+
       }
       Dirs::FillDir(bestDirPt, bestRoute);
 

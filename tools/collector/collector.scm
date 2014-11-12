@@ -67,7 +67,7 @@
                 (cond ((null? ls) null)
                       ((eq? (car ls) #\.) (reverse acc))
                       (else (loop (cdr ls) (cons (car ls) acc)))))))
-         (loop rest null)))))
+         (drop (loop rest null) 1)))))
 
 (define get-usage-from-line
   (λ (line)
@@ -81,6 +81,11 @@
      (exact->inexact
       (if (zero? (length xs)) 0
           (/ (sum xs) (length xs))))))
+
+(define zavg
+  (λ (x total)
+     (exact->inexact
+      (if (zero? total) 0 (/ x total)))))
 
 (define collect-on-lines
   (λ (lines)
@@ -99,6 +104,7 @@
                                                   ;; per-car gas usage (map string->number (map list->string usage-acc))
                                                   (sum (map string->number (map list->string usage-acc)))
                                                   (average (map string->number (map list->string usage-acc)))
+                                                  (zavg (length usage-acc) (+ (length usage-acc) dead-acc))
                                                   (length usage-acc)
                                                   dead-acc) pair-acc) null 0))
                       ((string-contains (car ls) usage)
@@ -120,7 +126,7 @@
 (define collector-print
   (λ (filename)
      (let* ((collections (collector filename))
-            (printer (map (λ (x) (apply (curry printf "~s ~s ~s ~s ~s~n") x))
+            (printer (map (λ (x) (apply (curry printf "~s ~s ~s ~s ~s ~s~n") x))
                           collections)))
        null)))
 
