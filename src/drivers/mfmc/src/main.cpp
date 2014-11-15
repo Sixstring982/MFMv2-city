@@ -152,7 +152,7 @@ int main(int argc, const char** argv)
 {
   MFM::DateTimeStamp stamper;
   MFM::LOG.SetTimeStamper(&stamper);
-  MFM::LOG.SetByteSink(MFM::STDERR);
+  MFM::LOG.SetByteSink(MFM::STDOUT);
   MFM::LOG.SetLevel(MFM::LOG.MESSAGE);
 
   if (EndsWith(argv[0],"_s"))

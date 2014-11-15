@@ -121,10 +121,10 @@ namespace MFM
   {
     WindowScanner<CC> scanner(window);
 
-    if(scanner.IsBorderingVonNeumann(GetSidewalkType()) &&
-       !scanner.CanSeeAtomOfType(GetStreetType(), 2) &&
-       !scanner.CanSeeAtomOfType(GetIntersectionType(), 2) &&
-       !scanner.CanSeeAtomOfType(GetCarType(), 2))
+    if (scanner.IsBorderingVonNeumann(GetSidewalkType()) &&
+       (!scanner.CanSeeAtomOfType(GetStreetType(), 2)) &&
+       (!scanner.CanSeeAtomOfType(GetIntersectionType(), 2)) &&
+       (!scanner.CanSeeAtomOfType(GetCarType(), 2)))
     {
       /* We're technically not on the street at this point. Let's get
        * changed to a rebuilding sidewalk. */
@@ -152,7 +152,7 @@ namespace MFM
   typename CC::ATOM_TYPE Element_City_Building<CC>::MakeRandomCar(u32 myBuildingType,
                                                                   Random& rand) const
   {
-    s32 type;
+    u32 type;
     T car = Element_City_Car<CC>::THE_INSTANCE.GetDefaultAtom();
     do
     {

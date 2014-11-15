@@ -275,7 +275,7 @@ namespace MFM
       {
         if(IsRebuilding(window.GetRelativeAtom(sidewalk)) &&
            (GetBuildingTimer(window.GetRelativeAtom(sidewalk)) <
-            MAX_TIMER_VALUE * 0.2))
+            MAX_TIMER_VALUE * 0.1))
         {
           T newCen = window.GetCenterAtom();
           SetRebuildFlag(newCen);

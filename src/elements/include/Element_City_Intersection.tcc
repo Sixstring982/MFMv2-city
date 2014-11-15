@@ -168,18 +168,22 @@ namespace MFM
                                                            u32 destinationType,
                                                            Dir comingFrom) const
   {
-    u32 roadFitness[] = {100, 100, 100, 100};
-    SPoint roads[4];
-    Dir dirs[4]; /* The non-canal directions */
+
+    u32 roadFitness[] = {100, 100, 100};
+    SPoint roads[3];
+    Dir dirs[3]; /* The non-canal directions */
     u32 i = 0;
     for (Dir d = Dirs::NORTH; d < Dirs::DIR_COUNT; d += 2)
     {
-      dirs[i] = d;
-      Dirs::FillDir(roads[i], dirs[i]);
-      i++;
+      if(d != Dirs::OppositeDir(comingFrom))
+      {
+        dirs[i] = d;
+        Dirs::FillDir(roads[i], dirs[i]);
+        i++;
+      }
     }
 
-    for(u32 i = 0; i < 4; i++)
+    for(u32 i = 0; i < 3; i++)
     {
       if(window.IsLiveSite(roads[i]))
       {
@@ -230,12 +234,11 @@ namespace MFM
     }
 
     u32 bestDirValue = MIN(roadFitness[0],
-                           MIN(roadFitness[1],
-                               MIN(roadFitness[2], roadFitness[3])));
+                           MIN(roadFitness[1], roadFitness[2]));
     u32 bestCount = 0;
-    Dir dirsOfMin[4];
+    Dir dirsOfMin[3];
 
-    for(u32 i = 0; i < 4; i++)
+    for(u32 i = 0; i < 3; i++)
     {
       if(roadFitness[i] == bestDirValue)
       {
@@ -271,6 +274,17 @@ namespace MFM
 
     if(scanner.FindRandomInVonNeumann(GetCarType(), carToMove) > 0)
     {
+      /* First, let's see if this is a car we should route. */
+      if(Element_City_Car<CC>::THE_INSTANCE.GetDirection(window.GetRelativeAtom(carToMove)) !=
+	 Dirs::OppositeDir(Dirs::FromOffset(carToMove))) {
+	/* We probably just put that car there. Let's let it go. */
+
+	T newCar = window.GetRelativeAtom(carToMove);
+	Element_City_Car<CC>::THE_INSTANCE.SetDirection(newCar, Dirs::FromOffset(carToMove));
+	window.SetRelativeAtom(carToMove, newCar);
+	return;
+      }
+
       streetsAndCars =
       scanner.CountVonNeumannNeighbors(GetCarType()) +
       scanner.CountVonNeumannNeighbors(GetStreetType());
@@ -442,7 +456,7 @@ namespace MFM
       }
     }
 
-    for(u32 i = 0; i < m_minCreatedStreets.GetValue(); i++)
+    for(s32 i = 0; i < m_minCreatedStreets.GetValue(); i++)
     {
       CreateStreetFromEmpty(window, dirs[i]);
     }

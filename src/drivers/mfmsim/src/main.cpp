@@ -126,7 +126,7 @@ namespace MFM {
 
 int main(int argc, const char** argv)
 {
-  MFM::LOG.SetByteSink(MFM::STDERR);
+  MFM::LOG.SetByteSink(MFM::STDOUT);
   MFM::LOG.SetLevel(MFM::LOG.ALL);
 
   MFM::MFMSimDHSDemo sim;

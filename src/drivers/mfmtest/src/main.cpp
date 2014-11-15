@@ -6,7 +6,7 @@ int main(int argc, char** argv)
 {
   if (argc > 1)
   {
-    MFM::LOG.SetByteSink(MFM::STDERR);
+    MFM::LOG.SetByteSink(MFM::STDOUT);
     MFM::LOG.SetLevel(MFM::LOG.ALL);
   }
 

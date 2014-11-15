@@ -100,6 +100,13 @@ namespace MFM
               }
             }
           }
+	  if (IsRebuilding(window.GetRelativeAtom(borderStreet)) &&
+	      (GetBuildingTimer(window.GetRelativeAtom(borderStreet)) <
+	       MAX_TIMER_VALUE * 0.1)) {
+	    T newCen = window.GetCenterAtom();
+	    SetRebuildFlag(newCen);
+	    window.SetCenterAtom(newCen);
+	  }
         }
       }
     }

@@ -45,14 +45,16 @@
 
 (define grep-relevant-lines
   (λ (lines)
-     (let* ((raws '("Saving to:" "Gas Usage:" "Out of gas!"))
+     (let* ((raws '("Saving to:" "Gas Usage:" "Out of gas!" "final"))
             (strings (map string->list raws))
             (epoch (list-ref strings 0))
             (usage (list-ref strings 1))
-            (outofgas (list-ref strings 2)))
+            (outofgas (list-ref strings 2))
+	    (final (list-ref strings 3)))
        (filter
         (λ (line)
-           (or (string-contains line epoch)
+           (or (and (string-contains line epoch)
+		    (not (string-contains line final)))
                (string-contains line usage)
                (string-contains line outofgas)))
         lines))))
@@ -130,8 +132,34 @@
                           collections)))
        null)))
 
+(define remove-chars
+  (λ (char str)
+     (let ((ls (string->list str)))
+       (list->string
+	(filter (λ (x) (not (equal? char x))) ls)))))
 
-
+(define collect-script
+  (λ ()
+     (let ((prefixes (map (curry remove-chars #\") '("NOT_USED" "CANAL_ROUTING" "RANDOM_ROUTING")))
+	   (srcdir (remove-chars #\" "/nfs/student/t/tsmall1/Desktop/"))
+	   (outdir (curry remove-chars #\" "/nfs/student/t/tsmall1/Documents/Git/MFMv2-city/tools/collector/")))
+       (letrec
+	   ((loop
+	     (λ (pfs idx)
+		(cond ((null? pfs) null)
+		      ((> idx 10)
+		       (loop (cdr pfs) 1))
+		      (else
+		       (let* ((infile (string-append srcdir "mfm-city-" (car pfs) "-" (number->string idx) ".txt"))
+			      (outfile (string-append outdir "mfm-city-" (car pfs) "-" (number->string idx) ".dat"))
+			      (outfp (open-output-file outfile))
+			      (col (collector infile))
+			      (strlines (map (λ (line) (map number->string line)) col))
+			      (spaced (map (λ (line) (map (λ (x) (string-append x " ")) line)) strlines))
+			      (appended (map (λ (line) (apply string-append line)) spaced))
+			      (write (map (λ (line) (displayln line outfp)) appended)))
+			 (loop pfs (add1 idx))))))))
+	 (loop prefixes 1)))))
 
 ;; TESTS
 
